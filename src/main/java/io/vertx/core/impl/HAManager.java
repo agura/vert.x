@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.internal.util.DU;
 
 /**
  *
@@ -467,10 +468,12 @@ public class HAManager {
   }
 
   private void callFailoverCompleteHandler(FailoverCompleteHandler handler, String nodeID, JsonObject haInfo, boolean result) {
+    final long seq = DU.op(nodeID, haInfo);
     if (handler != null) {
       CountDownLatch latch = new CountDownLatch(1);
       // The testsuite requires that this is called on a Vert.x thread
       vertx.runOnContext(v -> {
+        DU.op(seq, new Object[]{});
         handler.handle(nodeID, haInfo, result);
         latch.countDown();
       });

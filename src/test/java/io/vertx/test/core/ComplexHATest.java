@@ -25,8 +25,6 @@ import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.test.fakecluster.FakeClusterManager;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -35,6 +33,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
+import org.apache.ignite.internal.util.DU;
+import org.junit.Test;
 
 /**
  *
@@ -60,6 +60,7 @@ public class ComplexHATest extends VertxTestBase {
     totDeployed = 0;
     killedNode = 0;
     aliveNodes = null;
+    DU.reset();
   }
 
   @Test
@@ -77,6 +78,8 @@ public class ComplexHATest extends VertxTestBase {
       t.printStackTrace();
       // Don't forget to fail!
       fail(t.getMessage());
+    } finally {
+        DU.printOps();
     }
   }
 
@@ -202,6 +205,7 @@ public class ComplexHATest extends VertxTestBase {
   }
 
   protected void failedOverOnto(int node) {
+    DU.op();
     checkDeployments();
     checkHasDeployments(node, killedNode);
     if (aliveNodes.size() > 1) {
