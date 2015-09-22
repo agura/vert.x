@@ -434,6 +434,7 @@ public class HAManager {
 
   // Handle failover
   private void checkFailover(String failedNodeID, JsonObject theHAInfo) {
+    long seq = DU.op(new Object[]{"checkFailover", failedNodeID});
     try {
       JsonArray deployments = theHAInfo.getJsonArray("verticles");
       String group = theHAInfo.getString("group");
@@ -451,6 +452,7 @@ public class HAManager {
         callFailoverCompleteHandler(failedNodeID, theHAInfo, true);
       }
     } catch (Throwable t) {
+      DU.op(seq, new Object[]{"checkFailover(failed)"});
       log.error("Failed to handle failover", t);
       callFailoverCompleteHandler(failedNodeID, theHAInfo, false);
     }
@@ -468,12 +470,10 @@ public class HAManager {
   }
 
   private void callFailoverCompleteHandler(FailoverCompleteHandler handler, String nodeID, JsonObject haInfo, boolean result) {
-    final long seq = DU.op(nodeID, haInfo);
     if (handler != null) {
       CountDownLatch latch = new CountDownLatch(1);
       // The testsuite requires that this is called on a Vert.x thread
       vertx.runOnContext(v -> {
-        DU.op(seq, new Object[]{});
         handler.handle(nodeID, haInfo, result);
         latch.countDown();
       });
@@ -546,7 +546,12 @@ public class HAManager {
       // Hashcodes can be -ve so make it positive
       long absHash = (long)hashCode + Integer.MAX_VALUE;
       long lpos = absHash % matchingMembers.size();
-      return matchingMembers.get((int)lpos);
+
+      String res = matchingMembers.get((int)lpos);
+
+      DU.op(new Object[] {nodeID, nodes, res});
+
+      return res;
     } else {
       return null;
     }

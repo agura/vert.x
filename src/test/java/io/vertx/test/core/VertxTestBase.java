@@ -33,6 +33,7 @@ import io.vertx.core.net.TCPSSLOptions;
 import io.vertx.core.net.TrustOptions;
 import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.test.fakecluster.FakeClusterManager;
+import org.apache.ignite.internal.util.DU;
 import org.junit.Rule;
 
 import java.io.File;
@@ -122,6 +123,7 @@ public class VertxTestBase extends AsyncTestBase {
     }
     try {
       assertTrue(latch.await(2, TimeUnit.MINUTES));
+      DU.op(new Object[]{"Nodes started"});
     } catch (InterruptedException e) {
       fail(e.getMessage());
     }

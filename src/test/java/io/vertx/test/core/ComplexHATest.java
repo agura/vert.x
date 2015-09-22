@@ -48,11 +48,12 @@ public class ComplexHATest extends VertxTestBase {
 
   private Random random = new Random();
 
-  protected final int maxVerticlesPerNode = 20;
+  protected final int maxVerticlesPerNode = 5;
   protected Set<Deployment>[] deploymentSnapshots;
   protected volatile int totDeployed;
   protected volatile int killedNode;
   protected List<Integer> aliveNodes;
+  protected boolean successOpsPrinted;
 
   public void setUp() throws Exception {
     super.setUp();
@@ -73,17 +74,22 @@ public class ComplexHATest extends VertxTestBase {
         killRandom();
       });
       await(10, TimeUnit.MINUTES);
+      if (!successOpsPrinted) {
+          DU.printOps();
+          successOpsPrinted = true;
+      }
     } catch (Throwable t) {
+      DU.printOps();
       // Need to explicitly catch throwables in repeats or they will be swallowed
       t.printStackTrace();
       // Don't forget to fail!
       fail(t.getMessage());
-    } finally {
-        DU.printOps();
     }
   }
 
   protected void deployRandomVerticles(Runnable runner) {
+    DU.op(new Object[]{"deployRandomVerticles(start)"});
+
     int toDeploy = 0;
     AtomicInteger deployCount = new AtomicInteger();
     List<Integer> numbersToDeploy = new ArrayList<>();
@@ -111,11 +117,16 @@ public class ComplexHATest extends VertxTestBase {
     int ttoDeploy = toDeploy;
     eventLoopWaitUntil(() -> ttoDeploy == deployCount.get(), () -> {
       totDeployed += ttoDeploy;
+
+      DU.op(new Object[]{"deployRandomVerticles(done)", totDeployed, ttoDeploy});
+
       runner.run();
     });
   }
 
   protected void undeployRandomVerticles(Runnable runner) {
+    DU.op(new Object[]{"undeployRandomVerticles(start)"});
+
     int toUndeploy = 0;
     AtomicInteger undeployCount = new AtomicInteger();
     for (int pos: aliveNodes) {
@@ -136,6 +147,9 @@ public class ComplexHATest extends VertxTestBase {
     int totUndeployed = toUndeploy;
     eventLoopWaitUntil(() -> totUndeployed == undeployCount.get(), () -> {
       totDeployed -= totUndeployed;
+
+      DU.op(new Object[]{"undeployRandomVerticles(done)", totDeployed, totUndeployed});
+
       runner.run();
     });
 
@@ -178,6 +192,8 @@ public class ComplexHATest extends VertxTestBase {
   }
 
   protected void kill(int pos) {
+    DU.op(new Object[] {"kill", pos, ((VertxInternal)vertices[pos]).getNodeID()});
+
     // Save the deploymentIDs first
     takeDeploymentSnapshots();
     VertxInternal v = (VertxInternal)vertices[pos];
@@ -205,7 +221,8 @@ public class ComplexHATest extends VertxTestBase {
   }
 
   protected void failedOverOnto(int node) {
-    DU.op();
+    DU.op(new Object[]{"failedOverOnto", node, ((VertxInternal)vertices[node]).getNodeID()});
+
     checkDeployments();
     checkHasDeployments(node, killedNode);
     if (aliveNodes.size() > 1) {
